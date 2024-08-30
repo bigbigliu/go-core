@@ -3,10 +3,11 @@ package upyunOss
 import (
 	"errors"
 	"fmt"
-	"github.com/bigbigliu/go-core/pkgs"
-	"github.com/upyun/go-sdk/v3/upyun"
 	"path/filepath"
 	"time"
+
+	"github.com/bigbigliu/go-core/pkgs"
+	"github.com/upyun/go-sdk/v3/upyun"
 )
 
 // IUpYunOssUpload 又拍云上传文件
@@ -45,24 +46,9 @@ func (h *UpYunOssUpload) UploadLocalFile(param *UploadLocalFileParam) (string, e
 		Path:      path,
 		LocalPath: param.LocalFilePath,
 	}
-	//err := upNew.Put(uploadParam)
-	//if err != nil {
-	//	return "", err
-	//}
-
-	// 设置重试次数
-	retryCount := 1
-	for i := 0; i <= retryCount; i++ {
-		err := upNew.Put(uploadParam)
-		if err != nil {
-			if i == retryCount {
-				return "", err
-			}
-			//fmt.Printf("Error uploading file: %v. Retrying...\n", err)
-			continue
-		}
-		//// 上传成功则返回路径
-		//return uploadParam.Path, nil
+	err := upNew.Put(uploadParam)
+	if err != nil {
+		return "", err
 	}
 
 	return uploadParam.Path, nil
