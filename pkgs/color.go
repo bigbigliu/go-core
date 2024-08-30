@@ -99,7 +99,7 @@ var (
 	hidden    = outer(H)
 	strikeout = outer(S)
 
-	global = New()
+	global = NewColor()
 )
 
 func outer(n string) inner {
@@ -129,7 +129,7 @@ type (
 )
 
 // New creates a Color instance.
-func New() (c *Color) {
+func NewColor() (c *Color) {
 	c = new(Color)
 	c.SetOutput(colorable.NewColorableStdout())
 	return
