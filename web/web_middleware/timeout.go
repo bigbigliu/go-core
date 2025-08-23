@@ -12,9 +12,6 @@ import (
 func TimeoutMiddleware(reqTimeout time.Duration) gin.HandlerFunc {
 	return timeout.New(
 		timeout.WithTimeout(reqTimeout),
-		timeout.WithHandler(func(c *gin.Context) {
-			c.Next()
-		}),
 		timeout.WithResponse(TimeoutResponse),
 	)
 }
