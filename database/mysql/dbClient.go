@@ -3,12 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/bigbigliu/go-core/logger"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormLog "gorm.io/gorm/logger"
-	"os"
 )
 
 var (

@@ -1,10 +1,11 @@
 package web_middleware
 
 import (
-	"github.com/gin-contrib/timeout"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"github.com/gin-contrib/timeout"
+	"github.com/gin-gonic/gin"
 )
 
 // TimeoutMiddleware 接口超时中间件

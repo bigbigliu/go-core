@@ -3,10 +3,12 @@ package web_middleware
 import (
 	"bytes"
 	"fmt"
-	"github.com/bigbigliu/go-core/logger"
 	"io"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/bigbigliu/go-core/logger"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -18,14 +20,35 @@ type responseBodyWriter struct {
 	body *bytes.Buffer
 }
 
+// Write 重写 Write 方法，将响应体写入缓冲区
 func (w responseBodyWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
 }
 
 // GinLogger gin 日志请求中间件
-func GinLogger() gin.HandlerFunc {
+// skipPaths: 需要跳过的完全匹配路径列表
+// skipKeywords: 需要跳过的包含关键字列表
+func GinLogger(skipPaths []string, skipKeywords []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		currentPath := c.Request.URL.Path
+
+		// 检查完全匹配的路径
+		for _, skipPath := range skipPaths {
+			if currentPath == skipPath {
+				c.Next()
+				return
+			}
+		}
+
+		// 检查包含关键字的路径
+		for _, keyword := range skipKeywords {
+			if strings.Contains(currentPath, keyword) {
+				c.Next()
+				return
+			}
+		}
+
 		sugarLogger := logger.Logger
 
 		c.Set("zapLogger", sugarLogger)

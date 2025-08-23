@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/bigbigliu/go-core/pkgs"
 	"io"
 	"path/filepath"
+
+	"github.com/bigbigliu/go-core/pkgs"
 
 	"github.com/bigbigliu/go-core/logger"
 	"github.com/qiniu/go-sdk/v7/auth/qbox"

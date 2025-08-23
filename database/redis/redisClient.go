@@ -2,11 +2,12 @@ package redis
 
 import (
 	"context"
+	"os"
+	"strconv"
+
 	"github.com/bigbigliu/go-core/logger"
 	goRedis "github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
-	"os"
-	"strconv"
 )
 
 // Redisclient 全局redis客户端

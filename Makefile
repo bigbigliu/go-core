@@ -1,5 +1,12 @@
 PROJECT:=go-core
 
+lint:
+	golangci-lint run --issues-exit-code 1
+
+fmt:
+	@echo "Formatting imports..."
+	@goimports -w .
+
 swag:
 	@swag i -g init_router.go -dir app/admin/router --instanceName admin --parseDependency -o docs/admin
 
@@ -49,13 +56,4 @@ build:
 docker-push:
 	docker push $(IMAGE):$(VERSION)
 
-## pre: swag test
-pre: swag test
 
-## git commit: git-commit git-push
-git: pre git-commit git-push
-
-## all: build、docker-push
-all: build docker-push
-
-.PHONY: build docker-push

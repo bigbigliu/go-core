@@ -1,8 +1,9 @@
 package web_middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CorsMiddleware 跨域中间件
