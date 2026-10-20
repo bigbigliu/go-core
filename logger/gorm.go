@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -33,28 +34,31 @@ func (l *CustomLogger) LogMode(level gormLog.LogLevel) gormLog.Interface {
 
 // Info 记录信息日志
 func (l *CustomLogger) Info(ctx context.Context, s string, args ...interface{}) {
-	if l.level >= gormLog.Info {
-		l.logger.Info(s, append([]zap.Field{zap.Any(RequestIDKey, ctx.Value(RequestIDKey))}, zap.Any("arguments", args))...)
+	if l.logger == nil || l.level < gormLog.Info {
+		return
 	}
+	l.logger.Info(fmt.Sprintf(s, args...), zap.Any(RequestIDKey, requestID(ctx)))
 }
 
 // Warn 记录警告日志
 func (l *CustomLogger) Warn(ctx context.Context, s string, args ...interface{}) {
-	if l.level >= gormLog.Warn {
-		l.logger.Warn(s, append([]zap.Field{zap.Any(RequestIDKey, ctx.Value(RequestIDKey))}, zap.Any("arguments", args))...)
+	if l.logger == nil || l.level < gormLog.Warn {
+		return
 	}
+	l.logger.Warn(fmt.Sprintf(s, args...), zap.Any(RequestIDKey, requestID(ctx)))
 }
 
 // Error 记录错误日志
 func (l *CustomLogger) Error(ctx context.Context, s string, args ...interface{}) {
-	if l.level >= gormLog.Error {
-		l.logger.Error(s, append([]zap.Field{zap.Any(RequestIDKey, ctx.Value(RequestIDKey))}, zap.Any("arguments", args))...)
+	if l.logger == nil || l.level < gormLog.Error {
+		return
 	}
+	l.logger.Error(fmt.Sprintf(s, args...), zap.Any(RequestIDKey, requestID(ctx)))
 }
 
 // Trace 记录追踪日志
 func (l *CustomLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
-	if l.level == gormLog.Silent {
+	if l.logger == nil || l.level == gormLog.Silent {
 		return
 	}
 
@@ -62,12 +66,12 @@ func (l *CustomLogger) Trace(ctx context.Context, begin time.Time, fc func() (st
 
 	s, ts := fc()
 	fields := []zap.Field{
-		zap.Any(RequestIDKey, ctx.Value(RequestIDKey)), // requestID
-		zap.String("sql", s),                           // sql语句
-		zap.Int64("rows", ts),                          // 受影响行数
-		zap.String("function", funcName),               // 记录执行的 SQL 函数
-		zap.Int("function_line", funcline),             // 记录执行的 SQL 函数行号
-		zap.Duration("elapsed", time.Since(begin)),     // sql耗时 / 纳秒
+		zap.Any(RequestIDKey, requestID(ctx)),      // requestID
+		zap.String("sql", s),                       // sql语句
+		zap.Int64("rows", ts),                      // 受影响行数
+		zap.String("function", funcName),           // 记录执行的 SQL 函数
+		zap.Int("function_line", funcline),         // 记录执行的 SQL 函数行号
+		zap.Duration("elapsed", time.Since(begin)), // sql耗时
 	}
 	if err != nil {
 		if err.Error() == "record not found" {
@@ -78,6 +82,14 @@ func (l *CustomLogger) Trace(ctx context.Context, begin time.Time, fc func() (st
 	} else {
 		l.logger.Info("SQL Query", fields...)
 	}
+}
+
+func requestID(ctx context.Context) any {
+	id, ok := RequestIDFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	return id
 }
 
 // getCallingFunction 获取当前调用的函数名

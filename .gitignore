@@ -1,3 +1,11 @@
 .vscode/
 
 .idea/
+
+# build & runtime artifacts
+target/
+log/
+*.log
+coverage.out
+
+docs/

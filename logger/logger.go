@@ -2,19 +2,22 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 
-	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
-	RequestIDKey = "X-Request-ID" // RequestIDKey
+	// RequestIDKey request id 在日志字段和 gin.Context 中使用的 key
+	RequestIDKey = "X-Request-ID"
 )
 
 var (
+	// Logger 全局日志实例
 	Logger *zap.Logger
 )
 
@@ -26,8 +29,12 @@ type CoreLog struct {
 	ServiceName   string `json:"service_name"`    // ServiceName 服务名
 }
 
-// InitializeLogger 初始化日志记录器
-func InitializeLogger(param *CoreLog) {
+// InitializeLogger 初始化日志记录器。失败时返回错误，不主动退出进程。
+func InitializeLogger(param *CoreLog) error {
+	if param == nil {
+		return errors.New("logger 配置不能为空")
+	}
+
 	logLevel := zapcore.InfoLevel
 	switch strings.ToLower(param.LogLevel) {
 	case "debug":
@@ -55,11 +62,13 @@ func InitializeLogger(param *CoreLog) {
 		EncodeLevel:    zapcore.CapitalColorLevelEncoder, // 这里可以指定颜色
 	}
 
-	if err := os.MkdirAll(param.LogDir, os.ModePerm); err != nil {
-		panic("无法创建日志文件夹: " + err.Error())
+	logDir := param.LogDir
+	if logDir == "" {
+		logDir = "./log"
 	}
-
-	logPath := param.LogDir + "/app.log"
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		return err
+	}
 
 	var cores []zapcore.Core
 
@@ -76,7 +85,7 @@ func InitializeLogger(param *CoreLog) {
 
 	// 文件输出
 	lumberjackLogger := &lumberjack.Logger{
-		Filename:   logPath,
+		Filename:   logDir + "/app.log",
 		MaxSize:    100,  // 单个日志文件的最大大小/MB
 		MaxBackups: 3,    // 指定要保留的旧日志文件的最大数量
 		MaxAge:     1,    // 按天切割
@@ -100,17 +109,49 @@ func InitializeLogger(param *CoreLog) {
 	if param.ServiceName != "" {
 		Logger = Logger.WithOptions(zap.Fields(zap.String("service_name", param.ServiceName)))
 	}
+	return nil
 }
 
-// WithContext 添加 requestid 到 logger
-func WithContext(ctx context.Context) zap.Option {
-	if Logger == nil {
-		panic("Logger not init")
+type requestIDContextKey struct{}
+
+// ContextWithRequestID 将 request id 写入 context，供日志和下游调用使用。
+func ContextWithRequestID(ctx context.Context, requestID string) context.Context {
+	return context.WithValue(ctx, requestIDContextKey{}, requestID)
+}
+
+// RequestIDFromContext 从 context 中读取 request id。
+func RequestIDFromContext(ctx context.Context) (string, bool) {
+	if ctx == nil {
+		return "", false
 	}
-	requestID, ok := ctx.Value(RequestIDKey).(string)
+	if v, ok := ctx.Value(requestIDContextKey{}).(string); ok && v != "" {
+		return v, true
+	}
+	v, ok := ctx.Value(RequestIDKey).(string)
+	return v, ok && v != ""
+}
+
+// Sync 刷新日志缓冲，建议在进程退出前调用。
+func Sync() error {
+	if Logger == nil {
+		return nil
+	}
+	err := Logger.Sync()
+	// 标准输出/错误在部分平台不支持 Sync，忽略这类无害错误
+	if err != nil {
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "invalid argument") || strings.Contains(msg, "inappropriate ioctl") {
+			return nil
+		}
+	}
+	return err
+}
+
+// WithContext 添加 requestID 到 logger。Logger 未初始化时返回无副作用的 Option。
+func WithContext(ctx context.Context) zap.Option {
+	requestID, ok := RequestIDFromContext(ctx)
 	if !ok {
 		requestID = "unknown-request-id"
 	}
-
 	return zap.Fields(zap.String(RequestIDKey, requestID))
 }

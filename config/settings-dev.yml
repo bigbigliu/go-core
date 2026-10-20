@@ -2,24 +2,71 @@ app:
   host: 0.0.0.0
   port: 80
   mode: debug
+# 默认/单库连接（兼容旧配置，可省略）
 db:
   host: 127.0.0.1
   port: 3306
   user: root
-  pwd: 123456
+  password: "123456"
   name: core
-  max_idle_conns: 10
-  max_open_coons: 100
+  max_idle_connections: 10
+  max_open_connections: 100
+# 多数据库配置示例：key 即连接名称，数量不限。
+# 读取方式：
+#   for name, db := range config.GetConfig().Databases {
+#       mysql.DefaultManager.Open(name, &mysql.Config{...})
+#   }
+databases:
+  orders:
+    host: 127.0.0.1
+    port: 3306
+    user: root
+    password: "123456"
+    name: orders
+    max_idle_connections: 10
+    max_open_connections: 100
+  report:
+    host: 127.0.0.1
+    port: 3306
+    user: reporter
+    password: "123456"
+    name: report
+    max_idle_connections: 5
+    max_open_connections: 50
+  analytics:
+    host: 127.0.0.1
+    port: 3307
+    user: analyst
+    password: "123456"
+    name: analytics
+    max_idle_connections: 5
+    max_open_connections: 50
 redis:
   addr: 127.0.0.1
   port: 6379
   pwd:
   db: 0
+mongo:
+  # uri 非空时优先使用，例如 mongodb://127.0.0.1:27017
+  uri:
+  host: 127.0.0.1
+  port: 27017
+  username:
+  password:
+  auth_source:
+  database: core
+  app_name: go-core
+  max_pool_size: 100
+  min_pool_size: 0
+  # 单位：秒
+  connect_timeout: 10
+  server_selection_timeout: 10
 logger:
   # 日志存放路径
   path: ./log
-  # 日志等级
+  # 日志等级: debug/info/warn/error
   level: info
 jwt:
   secret: core_os
+  # 单位: 秒
   timeout: 7200
